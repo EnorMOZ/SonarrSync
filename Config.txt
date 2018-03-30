@@ -1,12 +1,15 @@
-[Radarr]
+[RadarrMaster]
 url = https://example.com:443
 key = FCKGW-RHQQ2-YXRKT-8TG6W-2B7Q8
 
-
-[Radarr4k]
+[SyncServers]
+; Ensure the servers start with 'Radarr_'
+[Radarr_4k]
 url = http://127.0.0.1:8080
 key = FCKGW-RHQQ2-YXRKT-8TG6W-2B7Q8
 
+;This is the profile ID the movie will be added to.
+profileId = 5
 
-
-
+; This is the profile ID the movie must have on the Master server.
+profileIdMatch = 5

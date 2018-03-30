@@ -1,9 +1,9 @@
 import os
 import logging
-import requests
 import json
-import configparser
 import sys
+import requests
+import configparser
 
 
 ########################################################################################################################
@@ -34,7 +34,6 @@ def ConfigSectionMap(section):
             dict1[option] = None
     return dict1
 
-
 Config = configparser.ConfigParser()
 settingsFilename = os.path.join(os.getcwd(), 'Config.txt')
 Config.read(settingsFilename)
@@ -42,61 +41,65 @@ Config.read(settingsFilename)
 session = requests.Session()
 session.trust_env = False
 
-radarr4k_url = ConfigSectionMap("Radarr4k")['url']
-radarr4k_key = ConfigSectionMap("Radarr4k")['key']
-radarr4kMovies = session.get('{0}/api/movie?apikey={1}'.format(radarr4k_url, radarr4k_key))
-
-radarr_url = ConfigSectionMap("Radarr")['url']
-radarr_key = ConfigSectionMap("Radarr")['key']
+radarr_url = ConfigSectionMap("RadarrMaster")['url']
+radarr_key = ConfigSectionMap("RadarrMaster")['key']
 radarrMovies = session.get('{0}/api/movie?apikey={1}'.format(radarr_url, radarr_key))
-
 if radarrMovies.status_code != 200:
-    logger.error('Radarr server error - response {}'.format(radarrMovies.status_code))
-    sys.exit(0)
-if radarr4kMovies.status_code != 200:
-    logger.error('4K Radarr server error - response {}'.format(radarr4kMovies.status_code))
+    logger.error('Master Radarr server error - response {}'.format(radarrMovies.status_code))
     sys.exit(0)
 
-movieIds4k = []
-for movie4k in radarr4kMovies.json():
-    movieIds4k.append(movie4k['tmdbId'])
-    #logger.debug('found movie to be added')
-
-newMovies = 0
-searchid = []
-for movie in radarrMovies.json():
-    if movie['profileId'] == 5:
-        if movie['tmdbId'] not in movieIds4k:
-            logging.debug('title: {0}'.format(movie['title']))
-            logging.debug('qualityProfileId: {0}'.format(movie['qualityProfileId']))
-            logging.debug('titleSlug: {0}'.format(movie['titleSlug']))
-            images = movie['images']
-            for image in images:
-                image['url'] = '{0}{1}'.format(radarr_url, image['url'])
-                logging.debug(image['url'])
-            logging.debug('tmdbId: {0}'.format(movie['tmdbId']))
-            logging.debug('path: {0}'.format(movie['path']))
-            logging.debug('monitored: {0}'.format(movie['monitored']))
-
-            payload = {'title': movie['title'],
-                       'qualityProfileId': movie['qualityProfileId'],
-                       'titleSlug': movie['titleSlug'],
-                       'tmdbId': movie['tmdbId'],
-                       'path': movie['path'],
-                       'monitored': movie['monitored'],
-                       'images': images,
-                       'profileId': movie['profileId'],
-                       'minimumAvailability': 'released'
-                       }
-
-            r = session.post('{0}/api/movie?apikey={1}'.format(radarr4k_url, radarr4k_key), data=json.dumps(payload))
-            searchid.append(int(r.json()['id']))
-            logger.info('adding {} to Radarr 4k server'.format(movie['title']))
+servers = {}
+for section in Config.sections():
+    section = str(section)
+    if "Radarr_" in section:
+        server = (str.split(section,'Radarr_'))[1]
+        servers[server] = ConfigSectionMap(section)
+        movies = session.get('{0}/api/movie?apikey={1}'.format(servers[server]['url'], servers[server]['key']))
+        if movies.status_code != 200:
+            logger.error('{0} Radarr server error - response {1}'.format(server, movies.status_code))
+            sys.exit(0)
         else:
-            logging.debug('{0} already in 4k library'.format(movie['title']))
+            servers[server]['movies'] = []
+            servers[server]['newMovies'] = 0
+            servers[server]['searchid'] = []
+            for movie in movies.json():
+                servers[server]['movies'].append(movie['tmdbId'])
 
+for movie in radarrMovies.json():
+    for name, server in servers.iteritems():
+        if movie['profileId'] == int(server['profileidmatch']):
+            if movie['tmdbId'] not in server['movies']:
+                logging.debug('server: {0}'.format(name))
+                logging.debug('title: {0}'.format(movie['title']))
+                logging.debug('qualityProfileId: {0}'.format(server['profileid']))
+                logging.debug('titleSlug: {0}'.format(movie['titleSlug']))
+                images = movie['images']
+                for image in images:
+                    image['url'] = '{0}{1}'.format(radarr_url, image['url'])
+                    logging.debug(image['url'])
+                logging.debug('tmdbId: {0}'.format(movie['tmdbId']))
+                logging.debug('path: {0}'.format(movie['path']))
+                logging.debug('monitored: {0}'.format(movie['monitored']))
 
-if len(searchid):
-    payload = {'name' : 'MoviesSearch', 'movieIds' : searchid}
-    session.post('{0}/api/command?apikey={1}'.format(radarr4k_url, radarr4k_key),data=json.dumps(payload))
+                payload = {'title': movie['title'],
+                           'qualityProfileId': server['profileid'],
+                           'titleSlug': movie['titleSlug'],
+                           'tmdbId': movie['tmdbId'],
+                           'path': movie['path'],
+                           'monitored': movie['monitored'],
+                           'images': images,
+                           'profileId': movie['profileId'],
+                           'minimumAvailability': 'released'
+                           }
+
+                r = session.post('{0}/api/movie?apikey={1}'.format(server['url'], server['key']), data=json.dumps(payload))
+                server['searchid'].append(int(r.json()['id']))
+                logger.info('adding {0} to Radarr {1} server'.format(movie['title'], name))
+            else:
+                logging.debug('{0} already in {1} library'.format(movie['title'], name))
+
+for name, server in servers.iteritems():
+    if len(server['searchid']):
+        payload = {'name' : 'MoviesSearch', 'movieIds' : server['searchid']}
+        session.post('{0}/api/command?apikey={1}'.format(server['url'], server['key']),data=json.dumps(payload))
 
