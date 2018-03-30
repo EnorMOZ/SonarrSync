@@ -69,6 +69,7 @@ for movie in radarrMovies.json():
     for name, server in servers.iteritems():
         if movie['profileId'] == int(server['profileidmatch']):
             if movie['tmdbId'] not in server['movies']:
+                path = str.replace(str(movie['path']), ConfigSectionMap("RadarrMaster")['basepath'], server['newpath'])
                 logging.debug('server: {0}'.format(name))
                 logging.debug('title: {0}'.format(movie['title']))
                 logging.debug('qualityProfileId: {0}'.format(server['profileid']))
@@ -78,14 +79,14 @@ for movie in radarrMovies.json():
                     image['url'] = '{0}{1}'.format(radarr_url, image['url'])
                     logging.debug(image['url'])
                 logging.debug('tmdbId: {0}'.format(movie['tmdbId']))
-                logging.debug('path: {0}'.format(movie['path']))
+                logging.debug('path: {0}'.format(path))
                 logging.debug('monitored: {0}'.format(movie['monitored']))
 
                 payload = {'title': movie['title'],
                            'qualityProfileId': server['profileid'],
                            'titleSlug': movie['titleSlug'],
                            'tmdbId': movie['tmdbId'],
-                           'path': movie['path'],
+                           'path': path,
                            'monitored': movie['monitored'],
                            'images': images,
                            'profileId': movie['profileId'],
