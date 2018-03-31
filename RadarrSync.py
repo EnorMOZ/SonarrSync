@@ -11,7 +11,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
 
-fileHandler = logging.FileHandler("./Output.txt")
+fileHandler = logging.FileHandler("./Output.txt",'w','utf-8')
 fileHandler.setFormatter(logFormatter)
 logger.addHandler(fileHandler)
 
