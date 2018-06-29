@@ -4,21 +4,15 @@ import json
 import sys
 import requests
 import configparser
+import argparse
+import shutil
+import time
 
-
-########################################################################################################################
-logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
-
-fileHandler = logging.FileHandler("./Output.txt",'w','utf-8')
-fileHandler.setFormatter(logFormatter)
-logger.addHandler(fileHandler)
-
-consoleHandler = logging.StreamHandler(sys.stdout)
-consoleHandler.setFormatter(logFormatter)
-logger.addHandler(consoleHandler)
-########################################################################################################################
+parser = argparse.ArgumentParser(description='SonarrSync. Sync two or more Sonarr servers. https://github.com/Sperryfreak01/SonarrSync')
+parser.add_argument('--config', action="store", type=str, help='Location of config file.')
+parser.add_argument('--debug', help='Enable debug logging.', action="store_true")
+parser.add_argument('--whatif', help="Read-Only. What would happen if I ran this. No posts are sent. Should be used with --debug", action="store_true")
+args = parser.parse_args()
 
 def ConfigSectionMap(section):
     dict1 = {}
@@ -35,16 +29,47 @@ def ConfigSectionMap(section):
 
 Config = configparser.ConfigParser()
 settingsFilename = os.path.join(os.getcwd(), 'Config.txt')
+if args.config:
+    settingsFilename = args.config
+elif not os.path.isfile(settingsFilename):
+    print("Creating default config. Please edit and run again.")
+    shutil.copyfile(os.path.join(os.getcwd(), 'Config.default'), settingsFilename)
+    sys.exit(0)
 Config.read(settingsFilename)
+
+print(ConfigSectionMap('Sonarr_4k')['rootfolders'].split(';'))
+exit()
+
+########################################################################################################################
+logger = logging.getLogger()
+if ConfigSectionMap("General")['log_level'] == 'DEBUG':
+    logger.setLevel(logging.DEBUG)
+elif ConfigSectionMap("General")['log_level'] == 'VERBOSE':
+    logger.setLevel(logging.VERBOSE)
+else:
+    logger.setLevel(logging.INFO)
+if args.debug:
+    logger.setLevel(logging.DEBUG)
+
+logFormatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
+
+fileHandler = logging.FileHandler(ConfigSectionMap('General')['log_path'],'w','utf-8')
+fileHandler.setFormatter(logFormatter)
+logger.addHandler(fileHandler)
+
+consoleHandler = logging.StreamHandler(sys.stdout)
+consoleHandler.setFormatter(logFormatter)
+logger.addHandler(consoleHandler)
+########################################################################################################################
 
 session = requests.Session()
 session.trust_env = False
 
 sonarr_url = ConfigSectionMap("SonarrMaster")['url']
 sonarr_key = ConfigSectionMap("SonarrMaster")['key']
-sonarrMovies = session.get('{0}/api/series?apikey={1}'.format(sonarr_url, sonarr_key))
-if sonarrMovies.status_code != 200:
-    logger.error('Master Sonarr server error - response {}'.format(sonarrMovies.status_code))
+sonarrSeries = session.get('{0}/api/series?apikey={1}'.format(sonarr_url, sonarr_key))
+if sonarrSeries.status_code != 200:
+    logger.error('Master Sonarr server error - response {}'.format(sonarrSeries.status_code))
     sys.exit(0)
 
 servers = {}
@@ -53,9 +78,9 @@ for section in Config.sections():
     if "Sonarr_" in section:
         server = (str.split(section,'Sonarr_'))[1]
         servers[server] = ConfigSectionMap(section)
-        series = session.get('{0}/api/series?apikey={1}'.format(servers[server]['url'], servers[server]['key']))
-        if series.status_code != 200:
-            logger.error('{0} Sonarr server error - response {1}'.format(server, series.status_code))
+        seriess = session.get('{0}/api/series?apikey={1}'.format(servers[server]['url'], servers[server]['key']))
+        if seriess.status_code != 200:
+            logger.error('{0} Sonarr server error - response {1}'.format(server, seriess.status_code))
             sys.exit(0)
         else:
             servers[server]['series'] = []
@@ -64,44 +89,56 @@ for section in Config.sections():
             for series in series.json():
                 servers[server]['series'].append(series['tvdbId'])
 
-for series in sonarrMovies.json():
+for series in sonarrSeries.json():
     for name, server in servers.items():
         if series['profileId'] == int(server['profileidmatch']):
-            if series['tvdbId'] not in server['series']:
-                spath = ConfigSectionMap("SonarrMaster")['basepath']
-                logging.debug('spath: {0}'.format(spath))
-                if spath in series['path']:
-                    rpath = str.replace(str(series['path']), ConfigSectionMap("SonarrMaster")['basepath'], server['newpath'])
-                    logging.debug('server: {0}'.format(name))
-                    logging.debug('newpath: {0}'.format(rpath))
-                    logging.debug('title: {0}'.format(series['title']))
-                    logging.debug('qualityProfileId: {0}'.format(server['profileid']))
-                    logging.debug('titleSlug: {0}'.format(series['titleSlug']))
-                    images = series['images']
-                    for image in images:
-                        image['url'] = '{0}{1}'.format(sonarr_url, image['url'])
-                        logging.debug(image['url'])
-                    logging.debug('tvdbId: {0}'.format(series['tvdbId']))
-                    logging.debug('path: {0}'.format(rpath))
-                    logging.debug('monitored: {0}'.format(series['monitored']))
+            if series['tvdbId'] not in server['seriess']:
+                if 'rootfolders' in server:
+                    allowedFolders = server['rootfolders'].split(';')
+                    for folder in allowedFolders:
+                        if not folder in series['path']:
+                            continue
+                if 'replace_path' in server:
+                    path = str(series['path']).replace(server['replace_path'], server['new_path'])
+                    logging.debug('Updating series path from: {0} to {1}'.format(series['path'], path))
+                else:
+                    path = series['path']
+                logging.debug('server: {0}'.format(name))
+                logging.debug('title: {0}'.format(series['title']))
+                logging.debug('qualityProfileId: {0}'.format(server['profileid']))
+                logging.debug('titleSlug: {0}'.format(series['titleSlug']))
+                images = series['images']
+                for image in images:
+                    image['url'] = '{0}{1}'.format(sonarr_url, image['url'])
+                    logging.debug(image['url'])
+                logging.debug('tvdbId: {0}'.format(series['tvdbId']))
+                logging.debug('path: {0}'.format(path))
+                logging.debug('monitored: {0}'.format(series['monitored']))
 
-                    payload = {'title': series['title'],
-                               'qualityProfileId': server['profileid'],
-                               'titleSlug': series['titleSlug'],
-                               'tvdbId': series['tvdbId'],
-                               'path': path,
-                               'monitored': series['monitored'],
-                               'images': images,
-                               'profileId': series['profileId'],
-                               'seasons': series['seasons'],
-                               'seasonFolder': series['seasonFolder'],
-                               'seriesType': series['seriesType']
-                               }
+                payload = {'title': series['title'],
+                           'qualityProfileId': server['profileid'],
+                           'titleSlug': series['titleSlug'],
+                           'tvdbId': series['tvdbId'],
+                           'path': path,
+                           'monitored': series['monitored'],
+                           'images': images,
+                           'profileId': series['profileId'],
+                           'seasons': series['seasons'],
+                           'seasonFolder': series['seasonFolder'],
+                           'seriesType': series['seriesType']
+                           }
 
+                logging.debug('payload: {0}'.format(payload))
+                server['newShows'] += 1
+                if args.whatif:
+                    logging.debug('WhatIf: Not actually adding series to Sonarr {0}.'.format(name))
+                else:
+                    if server['newShows'] > 0:
+                        logging.debug('Sleeping for: {0} seconds.'.format(ConfigSectionMap('General')['wait_between_add']))
+                        time.sleep(int(ConfigSectionMap('General')['wait_between_add']))
                     r = session.post('{0}/api/series?apikey={1}'.format(server['url'], server['key']), data=json.dumps(payload))
-                    logging.debug('payload: {0}'.format(payload))
                     server['searchid'].append(int(r.json()['id']))
-                    logger.info('adding {0} to Sonarr {1} server'.format(series['title'], name))
+                logger.info('adding {0} to Sonarr {1} server'.format(series['title'], name))
             else:
                 logging.debug('{0} already in {1} library'.format(series['title'], name))
 
