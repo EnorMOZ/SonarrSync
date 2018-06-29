@@ -1,3 +1,7 @@
+# Credits
+https://github.com/hjone72/RadarrSync
+https://github.com/Sperryfreak01/RadarrSync
+
 # SonarrSync
 Syncs two Sonarr servers through web API.  
 
