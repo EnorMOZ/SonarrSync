@@ -78,69 +78,69 @@ for section in Config.sections():
     if "Sonarr_" in section:
         server = (str.split(section,'Sonarr_'))[1]
         servers[server] = ConfigSectionMap(section)
-        seriess = session.get('{0}/api/series?apikey={1}'.format(servers[server]['url'], servers[server]['key']))
-        if seriess.status_code != 200:
-            logger.error('{0} Sonarr server error - response {1}'.format(server, seriess.status_code))
+        series = session.get('{0}/api/series?apikey={1}'.format(servers[server]['url'], servers[server]['key']))
+        if series.status_code != 200:
+            logger.error('{0} Sonarr server error - response {1}'.format(server, series.status_code))
             sys.exit(0)
         else:
             servers[server]['series'] = []
             servers[server]['newSeries'] = 0
             servers[server]['searchid'] = []
-            for series in series.json():
+            for serie in series.json():
                 servers[server]['series'].append(series['tvdbId'])
 
-for series in sonarrSeries.json():
+for serie in sonarrSeries.json():
     for name, server in servers.items():
-        if series['profileId'] == int(server['profileidmatch']):
-            if series['tvdbId'] not in server['seriess']:
+        if serie['profileId'] == int(server['profileidmatch']):
+            if serie['tvdbId'] not in server['series']:
                 if 'rootfolders' in server:
                     allowedFolders = server['rootfolders'].split(';')
                     for folder in allowedFolders:
-                        if not folder in series['path']:
+                        if not folder in serie['path']:
                             continue
                 if 'replace_path' in server:
-                    path = str(series['path']).replace(server['replace_path'], server['new_path'])
-                    logging.debug('Updating series path from: {0} to {1}'.format(series['path'], path))
+                    path = str(serie['path']).replace(server['replace_path'], server['new_path'])
+                    logging.debug('Updating serie path from: {0} to {1}'.format(serie['path'], path))
                 else:
-                    path = series['path']
+                    path = serie['path']
                 logging.debug('server: {0}'.format(name))
-                logging.debug('title: {0}'.format(series['title']))
+                logging.debug('title: {0}'.format(serie['title']))
                 logging.debug('qualityProfileId: {0}'.format(server['profileid']))
-                logging.debug('titleSlug: {0}'.format(series['titleSlug']))
-                images = series['images']
+                logging.debug('titleSlug: {0}'.format(serie['titleSlug']))
+                images = serie['images']
                 for image in images:
                     image['url'] = '{0}{1}'.format(sonarr_url, image['url'])
                     logging.debug(image['url'])
-                logging.debug('tvdbId: {0}'.format(series['tvdbId']))
+                logging.debug('tvdbId: {0}'.format(serie['tvdbId']))
                 logging.debug('path: {0}'.format(path))
                 logging.debug('monitored: {0}'.format(series['monitored']))
 
                 payload = {'title': series['title'],
                            'qualityProfileId': server['profileid'],
-                           'titleSlug': series['titleSlug'],
-                           'tvdbId': series['tvdbId'],
+                           'titleSlug': serie['titleSlug'],
+                           'tvdbId': serie['tvdbId'],
                            'path': path,
-                           'monitored': series['monitored'],
+                           'monitored': serie['monitored'],
                            'images': images,
-                           'profileId': series['profileId'],
-                           'seasons': series['seasons'],
-                           'seasonFolder': series['seasonFolder'],
-                           'seriesType': series['seriesType']
+                           'profileId': serie['profileId'],
+                           'seasons': serie['seasons'],
+                           'seasonFolder': serie['seasonFolder'],
+                           'seriesType': serie['seriesType']
                            }
 
                 logging.debug('payload: {0}'.format(payload))
                 server['newShows'] += 1
                 if args.whatif:
-                    logging.debug('WhatIf: Not actually adding series to Sonarr {0}.'.format(name))
+                    logging.debug('WhatIf: Not actually adding serie to Sonarr {0}.'.format(name))
                 else:
                     if server['newShows'] > 0:
                         logging.debug('Sleeping for: {0} seconds.'.format(ConfigSectionMap('General')['wait_between_add']))
                         time.sleep(int(ConfigSectionMap('General')['wait_between_add']))
                     r = session.post('{0}/api/series?apikey={1}'.format(server['url'], server['key']), data=json.dumps(payload))
                     server['searchid'].append(int(r.json()['id']))
-                logger.info('adding {0} to Sonarr {1} server'.format(series['title'], name))
+                logger.info('adding {0} to Sonarr {1} server'.format(serie['title'], name))
             else:
-                logging.debug('{0} already in {1} library'.format(series['title'], name))
+                logging.debug('{0} already in {1} library'.format(serie['title'], name))
 
 for name, server in servers.items():
     if len(server['searchid']):
