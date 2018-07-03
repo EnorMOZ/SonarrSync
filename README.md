@@ -1,6 +1,7 @@
 # Credits
-https://github.com/hjone72/RadarrSync
-https://github.com/Sperryfreak01/RadarrSync
+Thanks to https://github.com/Sperryfreak01/RadarrSync for the initial inspiration that lead to https://github.com/hjone72/RadarrSync MultiServer branch.
+
+This basically takes https://github.com/hjone72/RadarrSync MultiServer branch and converts it to Sonarr.
 
 # SonarrSync
 Syncs two Sonarr servers through web API.  
@@ -27,13 +28,13 @@ Sonarr does not support saving files to different folder roots for different qua
     log_level = DEBUG
 
     [SonarrMaster]
-    url = http://localhost:7879/Sonarr
+    url = http://localhost:8989
     key = XXXX-XXXX-XXXX-XXXX-XXXX
 
     [SyncServers]
     # Ensure the servers start with 'Sonarr_'
     [Sonarr_4k]
-    url = http://localhost:7878/4k_Sonarr
+    url = http://localhost:8990
     key = XXXX-XXXX-XXXX-XXXX-XXXX
 
     # Only sync series that are in these root folders. ';' (semicolon) separated list. Remove line to disable.

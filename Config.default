@@ -9,13 +9,13 @@ log_path = ./Output.txt
 log_level = DEBUG
 
 [SonarrMaster]
-url = http://localhost:7879/Sonarr
+url = http://localhost:8989
 key = XXXX-XXXX-XXXX-XXXX-XXXX
 
 [SyncServers]
 # Ensure the servers start with 'Sonarr_'
 [Sonarr_4k]
-url = http://localhost:7878/4k_Sonarr
+url = http://localhost:8990
 key = XXXX-XXXX-XXXX-XXXX-XXXX
 
 # Only sync series that are in these root folders. ';' (semicolon) separated list. Remove line to disable.
@@ -27,7 +27,7 @@ replace_path = /TV/
 new_path = /TV4k/
 
 # This is the profile ID the movie will be added to.
-profileId = 5
+profileId = 1
 
 # This is the profile ID the movie must have on the Master server.
 profileIdMatch = 5

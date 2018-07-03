@@ -115,7 +115,7 @@ for serie in sonarrSeries.json():
                 logging.debug('path: {0}'.format(path))
                 logging.debug('monitored: {0}'.format(serie['monitored']))
 
-                payload = {'title': series['title'],
+                payload = {'title': serie['title'],
                            'qualityProfileId': server['profileid'],
                            'titleSlug': serie['titleSlug'],
                            'tvdbId': serie['tvdbId'],
@@ -129,11 +129,11 @@ for serie in sonarrSeries.json():
                            }
 
                 logging.debug('payload: {0}'.format(payload))
-                server['newShows'] += 1
+                server['newSeries'] += 1
                 if args.whatif:
                     logging.debug('WhatIf: Not actually adding serie to Sonarr {0}.'.format(name))
                 else:
-                    if server['newShows'] > 0:
+                    if server['newSeries'] > 0:
                         logging.debug('Sleeping for: {0} seconds.'.format(ConfigSectionMap('General')['wait_between_add']))
                         time.sleep(int(ConfigSectionMap('General')['wait_between_add']))
                     r = session.post('{0}/api/series?apikey={1}'.format(server['url'], server['key']), data=json.dumps(payload))
