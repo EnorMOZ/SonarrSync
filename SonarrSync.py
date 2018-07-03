@@ -87,7 +87,7 @@ for section in Config.sections():
             servers[server]['newSeries'] = 0
             servers[server]['searchid'] = []
             for serie in series.json():
-                servers[server]['series'].append(series['tvdbId'])
+                servers[server]['series'].append(serie['tvdbId'])
 
 for serie in sonarrSeries.json():
     for name, server in servers.items():
@@ -122,7 +122,7 @@ for serie in sonarrSeries.json():
                            'path': path,
                            'monitored': serie['monitored'],
                            'images': images,
-                           'profileId': serie['profileId'],
+                           'profileId': server['profileid'],
                            'seasons': serie['seasons'],
                            'seasonFolder': serie['seasonFolder'],
                            'seriesType': serie['seriesType']
