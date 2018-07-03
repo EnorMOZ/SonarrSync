@@ -60,8 +60,10 @@ Recomended to run using cron every 15 minutes or an interval of your preference.
 ```bash
 python3 SonarrSync.py
 ```
-
-
+To test without running use:
+```bash
+python3 SonarrSync.py --debug --whatif
+```
 #### Requirements
  -- Python 3.4 or greater
  -- 2 or more Sonarr servers
