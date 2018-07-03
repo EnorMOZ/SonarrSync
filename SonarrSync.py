@@ -113,7 +113,7 @@ for serie in sonarrSeries.json():
                     logging.debug(image['url'])
                 logging.debug('tvdbId: {0}'.format(serie['tvdbId']))
                 logging.debug('path: {0}'.format(path))
-                logging.debug('monitored: {0}'.format(series['monitored']))
+                logging.debug('monitored: {0}'.format(serie['monitored']))
 
                 payload = {'title': series['title'],
                            'qualityProfileId': server['profileid'],
