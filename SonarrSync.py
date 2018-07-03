@@ -98,8 +98,8 @@ for serie in sonarrSeries.json():
                     for folder in allowedFolders:
                         if not folder in serie['path']:
                             continue
-                if 'replace_path' in server:
-                    path = str(serie['path']).replace(server['replace_path'], server['new_path'])
+                if 'current_path' in server:
+                    path = str(serie['path']).replace(server['current_path'], server['new_path'])
                     logging.debug('Updating serie path from: {0} to {1}'.format(serie['path'], path))
                 else:
                     path = serie['path']

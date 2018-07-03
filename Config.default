@@ -22,12 +22,12 @@ key = XXXX-XXXX-XXXX-XXXX-XXXX
 rootFolders = /TV
 
 # If this path exists
-replace_path = /TV/
+current_path = /TV/
 # Replace with this path
 new_path = /TV4k/
 
-# This is the profile ID the movie will be added to.
+# This is the profile ID the series will be added to.
 profileId = 1
 
-# This is the profile ID the movie must have on the Master server.
+# This is the profile ID the series must have on the Master server.
 profileIdMatch = 5
