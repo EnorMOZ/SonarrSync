@@ -137,8 +137,11 @@ for serie in sonarrSeries.json():
                         logging.debug('Sleeping for: {0} seconds.'.format(ConfigSectionMap('General')['wait_between_add']))
                         time.sleep(int(ConfigSectionMap('General')['wait_between_add']))
                     r = session.post('{0}/api/series?apikey={1}'.format(server['url'], server['key']), data=json.dumps(payload))
-                    server['searchid'].append(int(r.json()['id']))
-                logger.info('adding {0} to Sonarr {1} server'.format(serie['title'], name))
+                    if (r.status_code == 200):
+                        server['searchid'].append(int(r.json()['id']))
+                        logger.info('adding {0} to Sonarr {1} server'.format(serie['title'], name))
+                    else:
+                        logger.error('adding {0} to Sonarr {1} server failed. Response {2}'.format(serie['title'],name,r.text))
             else:
                 logging.debug('{0} already in {1} library'.format(serie['title'], name))
 
