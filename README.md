@@ -1,3 +1,5 @@
+# UNSUPPORTED USE AT YOUR OWN RISK !!!
+
 # Credits
 Thanks to https://github.com/Sperryfreak01/RadarrSync for the initial inspiration that lead to https://github.com/hjone72/RadarrSync MultiServer branch.
 
