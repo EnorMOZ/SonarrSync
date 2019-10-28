@@ -95,9 +95,12 @@ for serie in sonarrSeries.json():
             if serie['tvdbId'] not in server['series']:
                 if 'rootfolders' in server:
                     allowedFolders = server['rootfolders'].split(';')
+                    skip = False
                     for folder in allowedFolders:
                         if not folder in serie['path']:
-                            continue
+                            skip = True
+                    if skip:
+                        continue
                 if 'current_path' in server:
                     path = str(serie['path']).replace(server['current_path'], server['new_path'])
                     logging.debug('Updating serie path from: {0} to {1}'.format(serie['path'], path))
